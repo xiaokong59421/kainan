@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import json
 import subprocess
 import sys
 from math import ceil
@@ -24,6 +25,7 @@ REQUIRED = (
     "references/knowledge/凯南恋爱聊天风格.md",
     "references/knowledge/来源与证据说明.md",
     "references/practical/场景回复模式.md",
+    "references/practical/微信副驾JSON模式.md",
     "documentation/product.md",
     "documentation/architecture.md",
     "documentation/flows.md",
@@ -94,6 +96,8 @@ def validate_content() -> None:
             "拒绝/不适",
             "不适，立即降级并停止推进",
             "不声称是本人或官方团队",
+            "微信副驾 JSON 模式",
+            "只输出一个合法 JSON 对象",
         )
         for marker in markers:
             if marker not in text:
@@ -115,6 +119,38 @@ def validate_links() -> None:
                 continue
             if not (path.parent / target).resolve().exists():
                 ERRORS.append(f"broken local link in {path.relative_to(ROOT)}: {raw}")
+
+
+def validate_json_mode() -> None:
+    path = ROOT / "references/practical/微信副驾JSON模式.md"
+    if not path.is_file():
+        return
+    text = path.read_text(encoding="utf-8")
+    matches = re.findall(r"```json\s*\n(\{.*?\})\s*\n```", text, re.DOTALL)
+    if not matches:
+        ERRORS.append("JSON mode is missing a fenced example")
+        return
+    try:
+        sample = json.loads(matches[-1])
+    except json.JSONDecodeError as exc:
+        ERRORS.append(f"JSON mode example is invalid: {exc.msg}")
+        return
+    required = {"intent", "risk", "note", "best", "why", "replies"}
+    if set(sample) != required:
+        ERRORS.append(f"JSON mode example keys must be {sorted(required)}")
+    if sample.get("risk") not in {"低", "中", "高"}:
+        ERRORS.append("JSON mode example has invalid risk")
+    if sample.get("best") not in {0, 1, 2}:
+        ERRORS.append("JSON mode example has invalid best index")
+    replies = sample.get("replies")
+    styles = [item.get("style") for item in replies] if isinstance(replies, list) else []
+    if styles != ["稳妥", "幽默", "推进"]:
+        ERRORS.append("JSON mode example must use the three fixed reply styles")
+    if not isinstance(replies, list) or len(replies) != 3 or any(
+        not isinstance(item, dict) or not isinstance(item.get("text"), str)
+        for item in replies
+    ):
+        ERRORS.append("JSON mode example must contain three reply objects")
 
 
 def validate_runtime() -> None:
@@ -161,6 +197,7 @@ def main() -> int:
     validate_budget()
     validate_content()
     validate_links()
+    validate_json_mode()
     validate_runtime()
     validate_secrets()
     if ERRORS:
