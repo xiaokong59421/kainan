@@ -1,0 +1,10 @@
+.DS_Store
+.idea/
+.vscode/
+__pycache__/
+*.py[cod]
+*.docx
+.env*
+
+# Local research notes are not part of the distributable skill.
+/references/knowledge/来源台账与证据说明.md
