@@ -1,0 +1,7 @@
+interface:
+  display_name: "凯南恋爱聊天风格"
+  short_description: "分析并改写接地气、有梗且有边界的恋爱聊天"
+  default_prompt: "使用 $kainan-love-coach 分析或改写这段聊天，先给可发送版本，再说明节奏、分支和边界。"
+
+policy:
+  allow_implicit_invocation: true
